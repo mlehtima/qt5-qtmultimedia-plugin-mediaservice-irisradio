@@ -803,6 +803,9 @@ int FMRadioIrisControl::GetBuffer(int type)
     } else {
         qCritical("Failed to get buffer (error: %i)", errno);
     }
+
+    free(mbuf);
+
     return ret;
 }
 
