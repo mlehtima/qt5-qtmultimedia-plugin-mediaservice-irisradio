@@ -60,7 +60,7 @@ public:
     void setVolume(int volume);
 
     bool isMuted() const;
-    void setMuted(bool muted);
+    void setMuted(bool m_muted);
 
     void setSearching(bool search);
     bool isSearching() const;
@@ -69,7 +69,7 @@ public:
 
     void searchForward();
     void searchBackward();
-    void searchAllStations(QRadioTuner::SearchMode searchMode = QRadioTuner::SearchFast);
+    void searchAllStations(QRadioTuner::SearchMode m_searchMode = QRadioTuner::SearchFast);
     void cancelSearch();
 
     void start();
@@ -98,11 +98,11 @@ signals:
     void stateChanged(QRadioTuner::State state);
     void bandChanged(QRadioTuner::Band band);
     void frequencyChanged(int frequency);
-    void stereoStatusChanged(bool stereo);
+    void stereoStatusChanged(bool m_stereo);
     void searchingChanged(bool searching);
     void signalStrengthChanged(int signalStrength);
     void volumeChanged(int volume);
-    void mutedChanged(bool muted);
+    void mutedChanged(bool m_muted);
     void error(QRadioTuner::Error err);
     void stationFound(int frequency, QString stationId);
     void antennaConnectedChanged(bool connectionStatus);
@@ -119,30 +119,30 @@ private slots:
     void search();
 
 private:
-    pthread_t event_listener_thread;
+    pthread_t m_eventListenerThread;
 
-    int fd;
+    int m_fd;
 
     bool m_tunerError;
-    bool muted;
-    bool stereo;
-    bool low;
-    bool tunerAvailable;
-    int  step;
-    int  sig;
-    bool scanning;
-    bool forward;
-    QRadioTuner::Band currentBand;
-    qint64 freqMin;
-    qint64 freqMax;
-    qint64 currentFreq;
-    QTime  playTime;
-    QTimer* timer;
-    QRadioTuner::SearchMode searchMode;
-    qint64 searchStartFreq;
-    qint64 searchPreviousFreq;
+    bool m_muted;
+    bool m_stereo;
+    bool m_low;
+    bool m_tunerAvailable;
+    int  m_step;
+    int  m_signalStrength;
+    bool m_scanning;
+    bool m_forward;
+    QRadioTuner::Band m_currentBand;
+    qint64 m_freqMin;
+    qint64 m_freqMax;
+    qint64 m_currentFreq;
+    QTime  m_playTime;
+    QTimer* m_timer;
+    QRadioTuner::SearchMode m_searchMode;
+    qint64 m_searchStartFreq;
+    qint64 m_searchPreviousFreq;
 
-    bool rdsAvailable;
+    bool m_rdsAvailable;
     bool m_rdsError;
     QString m_stationId;
     QRadioData::ProgramType m_programType;
