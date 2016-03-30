@@ -57,12 +57,8 @@ FMRadioIrisControl::FMRadioIrisControl()
     currentBand = QRadioTuner::FM;
     step = 100000;
     scanning = false;
-    m_radioText = "";
-    m_stationName = "";
     m_programType = QRadioData::Undefined;
-    m_programTypeName = "";
     m_alternativeFrequenciesEnabled = true;
-    m_stationId = "";
     searchMode = QRadioTuner::SearchFast;
     searchPreviousFreq = freqMin;
     playTime.restart();
@@ -192,15 +188,15 @@ void FMRadioIrisControl::setFrequency(int frequency)
             currentFreq = f;
             playTime.restart();
             emit frequencyChanged(currentFreq);
-            m_radioText = "";
+            m_radioText.clear();
             emit radioTextChanged(m_radioText);
-            m_stationName = "";
+            m_stationName.clear();
             emit stationNameChanged(m_stationName);
             m_programType = QRadioData::Undefined;
             emit programTypeChanged(m_programType);
-            m_programTypeName = "";
+            m_programTypeName.clear();
             emit programTypeNameChanged(m_programTypeName);
-            m_stationId = "";
+            m_stationId.clear();
             emit stationIdChanged(m_stationId);
         }
     }
@@ -319,15 +315,15 @@ void FMRadioIrisControl::search()
         emit signalStrengthChanged(sig);
     }
 
-    m_radioText = "";
+    m_radioText.clear();
     emit radioTextChanged(m_radioText);
-    m_stationName = "";
+    m_stationName.clear();
     emit stationNameChanged(m_stationName);
     m_programType = QRadioData::Undefined;
     emit programTypeChanged(m_programType);
-    m_programTypeName = "";
+    m_programTypeName.clear();
     emit programTypeNameChanged(m_programTypeName);
-    m_stationId = "";
+    m_stationId.clear();
     emit stationIdChanged(m_stationId);
     SetCtrl(V4L2_CID_PRIVATE_IRIS_SCANDWELL, 7);
     if (searchMode == QRadioTuner::SearchGetStationId) {
