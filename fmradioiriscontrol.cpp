@@ -47,22 +47,33 @@ static void cconvert(QString *str) {
 QT_BEGIN_NAMESPACE
 
 FMRadioIrisControl::FMRadioIrisControl()
+    : QObject(),
+      event_listener_thread(0),
+      fd(-1),
+      m_tunerError(false),
+      muted(false),
+      stereo(false),
+      low(false),
+      tunerAvailable(false),
+      step(100000),
+      sig(0),
+      scanning(false),
+      forward(false),
+      currentBand(QRadioTuner::FM),
+      freqMin(0),
+      freqMax(0),
+      currentFreq(0),
+      timer(new QTimer(this)),
+      searchMode(QRadioTuner::SearchFast),
+      searchStartFreq(0),
+      searchPreviousFreq(0),
+      rdsAvailable(false),
+      m_rdsError(false),
+      m_programType(QRadioData::Undefined),
+      m_alternativeFrequenciesEnabled(true)
 {
-    fd = -1;
     initRadio();
-    muted = false;
-    stereo = false;
-    m_tunerError = false;
-    sig = 0;
-    currentBand = QRadioTuner::FM;
-    step = 100000;
-    scanning = false;
-    m_programType = QRadioData::Undefined;
-    m_alternativeFrequenciesEnabled = true;
-    searchMode = QRadioTuner::SearchFast;
-    searchPreviousFreq = freqMin;
     playTime.restart();
-    timer = new QTimer(this);
     timer->setInterval(2000);
     connect(timer, SIGNAL(timeout()), this, SLOT(search()));
     qDebug("Create FM Radio iris Control");
@@ -77,11 +88,6 @@ FMRadioIrisControl::~FMRadioIrisControl()
 bool FMRadioIrisControl::initRadio()
 {
     qDebug("Initialize radio");
-
-    low = false;
-    tunerAvailable = false;
-    freqMin = freqMax = currentFreq = 0;
-
     fd = open("/dev/radio0", O_RDONLY | O_NONBLOCK);
     if (fd != -1) {
         tunerAvailable = true;

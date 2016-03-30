@@ -130,9 +130,7 @@ private:
     bool stereo;
     bool low;
     bool tunerAvailable;
-    int  tuners;
     int  step;
-    int  vol;
     int  sig;
     bool scanning;
     bool forward;
