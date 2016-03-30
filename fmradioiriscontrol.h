@@ -117,12 +117,10 @@ signals:
 
 private slots:
     void search();
-    void doSeek(int dir);
 
 private:
     pthread_t event_listener_thread;
 
-    bool initRadio();
     int fd;
 
     bool m_tunerError;
@@ -153,6 +151,10 @@ private:
     QString m_radioText;
     bool m_alternativeFrequenciesEnabled;
 
+    static void *EventListener(void* context);
+
+    bool initRadio();
+    void doSeek(int dir);
     bool SetFreq(int frequency);//Hz
     int GetFreq(void);//Hz
     void GetCaps(void);
@@ -163,7 +165,6 @@ private:
     bool GetTuner();
     bool SetCtrl(int id, int value);
     int GetCtrl(int id);
-    static void *EventListener(void* context);
     unsigned int programTypeValue(int rdsStandard, unsigned int type);
     QString programTypeNameString(int rdsStandard, unsigned int type);
 };
