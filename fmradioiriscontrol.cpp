@@ -32,7 +32,7 @@
 #include <sys/ioctl.h>
 #include <linux/videodev2.h>
 
-QString cconv = QString("áàéèíìóòúùÑÇŞß¡Ĳâäêëîïôöûüñçşğıĳªα©‰Ğěňőπ€£$←↑→↓º¹²³±İńűμ¿÷°¼½¾§ÁÀÉÈÍÌÓÒÚÙŘČŠŽÐĿÂÄÊËÎÏÔÖÛÜřčšžđŀÃÅÆŒŷÝÕØÞŊŔĆŚŹŦðãåæœŵýõøþŋŕćśźŧ ");
+static QString cconv = QString("áàéèíìóòúùÑÇŞß¡Ĳâäêëîïôöûüñçşğıĳªα©‰Ğěňőπ€£$←↑→↓º¹²³±İńűμ¿÷°¼½¾§ÁÀÉÈÍÌÓÒÚÙŘČŠŽÐĿÂÄÊËÎÏÔÖÛÜřčšžđŀÃÅÆŒŷÝÕØÞŊŔĆŚŹŦðãåæœŵýõøþŋŕćśźŧ ");
 
 static void cconvert(QString *str) {
     int len = str->length();
@@ -284,11 +284,13 @@ bool FMRadioIrisControl::isSearching() const
     return scanning;
 }
 
-void FMRadioIrisControl::setSearching(bool search) {
+void FMRadioIrisControl::setSearching(bool search)
+{
     scanning = search;
 }
 
-void FMRadioIrisControl::doSeek(int dir) {
+void FMRadioIrisControl::doSeek(int dir)
+{
     struct v4l2_hw_freq_seek seek;
     memset(&seek, 0, sizeof(seek));
     seek.tuner = 0;
@@ -473,14 +475,16 @@ QString FMRadioIrisControl::rdsErrorString() const
     return QString();
 }
 
-void FMRadioIrisControl::GetCaps(void) {
+void FMRadioIrisControl::GetCaps(void)
+{
     struct v4l2_capability caps;
     if (ioctl(fd, VIDIOC_QUERYCAP, &caps) < 0) {
         qCritical("Failed to query capabilities (id: %i)", errno);
     }
 }
 
-int FMRadioIrisControl::GetEvent() {
+int FMRadioIrisControl::GetEvent()
+{
     return GetBuffer(IRIS_BUF_EVENTS);
 }
 
@@ -605,7 +609,8 @@ QString FMRadioIrisControl::programTypeNameString(int rdsStandard, unsigned int 
         return tr(rbdsTypes[type]);
 }
 
-int FMRadioIrisControl::GetBuffer(int type) {
+int FMRadioIrisControl::GetBuffer(int type)
+{
     int ret = -1;
     struct v4l2_buffer buf;
     memset(&buf, 0, sizeof(buf));
@@ -792,7 +797,8 @@ int FMRadioIrisControl::GetBuffer(int type) {
     return ret;
 }
 
-bool FMRadioIrisControl::SetTuner() {
+bool FMRadioIrisControl::SetTuner()
+{
     struct v4l2_tuner tuner;
     memset(&tuner, 0, sizeof(tuner));
     tuner.index = 0;
@@ -806,7 +812,8 @@ bool FMRadioIrisControl::SetTuner() {
     }
 }
 
-bool FMRadioIrisControl::GetTuner(void) {
+bool FMRadioIrisControl::GetTuner(void)
+{
     struct v4l2_tuner tuner;
     memset(&tuner, 0, sizeof(tuner));
     tuner.index = 0;
@@ -832,7 +839,8 @@ bool FMRadioIrisControl::GetTuner(void) {
     }
 }
 
-bool FMRadioIrisControl::SetCtrl(int id, int value) {
+bool FMRadioIrisControl::SetCtrl(int id, int value)
+{
     struct v4l2_control ctrl;
     memset(&ctrl, 0, sizeof(ctrl));
     ctrl.id = id;
@@ -845,7 +853,8 @@ bool FMRadioIrisControl::SetCtrl(int id, int value) {
     }
 }
 
-int FMRadioIrisControl::GetCtrl(int id) {
+int FMRadioIrisControl::GetCtrl(int id)
+{
     struct v4l2_control ctrl;
     memset(&ctrl, 0, sizeof(ctrl));
     ctrl.id = id;
@@ -857,7 +866,8 @@ int FMRadioIrisControl::GetCtrl(int id) {
     }
 }
 
-void *FMRadioIrisControl::EventListener(void* context) {
+void *FMRadioIrisControl::EventListener(void* context)
+{
     qDebug("Starting FM event listener");
     while (((FMRadioIrisControl *)context)->isTunerAvailable()) {
         ((FMRadioIrisControl *)context)->GetEvent();
@@ -866,7 +876,8 @@ void *FMRadioIrisControl::EventListener(void* context) {
     return NULL;
 }
 
-bool FMRadioIrisControl::SetFreq(int f) {
+bool FMRadioIrisControl::SetFreq(int f)
+{
     struct v4l2_frequency freq;
     memset(&freq, 0, sizeof(freq));
     freq.tuner = 0;
@@ -886,7 +897,8 @@ bool FMRadioIrisControl::SetFreq(int f) {
     }
 }
 
-int FMRadioIrisControl::GetFreq(void) {
+int FMRadioIrisControl::GetFreq(void)
+{
     struct v4l2_frequency freq;
     memset(&freq, 0, sizeof(freq));
     freq.tuner = 0;
