@@ -92,8 +92,6 @@ public:
     QRadioData::Error rdsError() const;
     QString rdsErrorString() const;
 
-public Q_SLOTS:
-
 signals:
     void tunerAvailabilityChanged(bool available);
     void tunerAvailabilityChanged(QMultimedia::AvailabilityStatus availability);

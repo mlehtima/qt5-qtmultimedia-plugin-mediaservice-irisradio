@@ -32,7 +32,7 @@ FMRadioService::FMRadioService(QObject *parent):
 {
     qDebug("Instantiating QMediaService...");
 
-    m_irisControl = new FMRadioIrisControl();
+    m_irisControl = new FMRadioIrisControl;
     m_tunerControl = new FMRadioTunerControl(this, m_irisControl);
     m_dataControl = new FMRadioDataControl(this, m_irisControl);
 }
