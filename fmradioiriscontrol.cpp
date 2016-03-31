@@ -83,6 +83,9 @@ FMRadioIrisControl::~FMRadioIrisControl()
 {
     m_timer->stop();
     SetCtrl(V4L2_CID_PRIVATE_IRIS_STATE, 0);
+    if (m_eventListenerThread > 0) {
+        pthread_join(m_eventListenerThread, NULL);
+    }
 }
 
 bool FMRadioIrisControl::initRadio()
