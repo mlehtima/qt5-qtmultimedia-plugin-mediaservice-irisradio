@@ -135,7 +135,7 @@ int FMRadioTunerControl::signalStrength() const
 
 int FMRadioTunerControl::volume() const
 {
-    return 0;
+    return control->volume();
 }
 
 void FMRadioTunerControl::setVolume(int)
@@ -159,7 +159,7 @@ bool FMRadioTunerControl::isSearching() const
 
 bool FMRadioTunerControl::isAntennaConnected() const
 {
-    return true;
+    return control->isAntennaConnected();
 }
 
 void FMRadioTunerControl::searchForward()
