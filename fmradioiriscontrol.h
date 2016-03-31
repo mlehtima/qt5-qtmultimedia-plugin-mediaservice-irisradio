@@ -39,7 +39,6 @@ public:
     ~FMRadioIrisControl();
 
     bool isTunerAvailable() const;
-    QMultimedia::AvailabilityStatus tunerAvailability() const;
 
     QRadioTuner::State tunerState() const;
 
@@ -93,8 +92,6 @@ public:
     QString rdsErrorString() const;
 
 signals:
-    void tunerAvailabilityChanged(bool available);
-    void tunerAvailabilityChanged(QMultimedia::AvailabilityStatus availability);
     void stateChanged(QRadioTuner::State state);
     void bandChanged(QRadioTuner::Band band);
     void frequencyChanged(int frequency);

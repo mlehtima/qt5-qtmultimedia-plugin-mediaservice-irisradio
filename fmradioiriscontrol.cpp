@@ -114,8 +114,6 @@ bool FMRadioIrisControl::initRadio()
     }
     m_tunerError = true;
     emit tunerError();
-    emit tunerAvailabilityChanged(false);
-    emit tunerAvailabilityChanged(QMultimedia::ResourceError);
 
     return false;
 }
@@ -123,14 +121,6 @@ bool FMRadioIrisControl::initRadio()
 bool FMRadioIrisControl::isTunerAvailable() const
 {
     return m_tunerAvailable;
-}
-
-QMultimedia::AvailabilityStatus FMRadioIrisControl::tunerAvailability() const
-{
-    if (m_tunerAvailable)
-        return QMultimedia::Available;
-    else
-        return QMultimedia::ResourceError;
 }
 
 QRadioTuner::State FMRadioIrisControl::tunerState() const
@@ -639,8 +629,6 @@ int FMRadioIrisControl::GetBuffer(int type)
                     case IRIS_EVT_RADIO_READY:
                         qDebug("Radio ready");
                         m_tunerAvailable = true;
-                        emit tunerAvailabilityChanged(true);
-                        emit tunerAvailabilityChanged(QMultimedia::Available);
                         break;
                     case IRIS_EVT_TUNE_SUCC:
                         GetFreq();
@@ -715,8 +703,6 @@ int FMRadioIrisControl::GetBuffer(int type)
                     case IRIS_EVT_RADIO_DISABLED:
                         qDebug("Radio disabled");
                         m_tunerAvailable = false;
-                        emit tunerAvailabilityChanged(false);
-                        emit tunerAvailabilityChanged(QMultimedia::ServiceMissing);
                         break;
                     case IRIS_EVT_NEW_ODA:
                         break;
