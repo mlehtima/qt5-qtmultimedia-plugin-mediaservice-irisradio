@@ -119,12 +119,10 @@ private:
 
     int m_fd;
 
-    bool m_tunerError;
     bool m_muted;
     bool m_stereo;
     bool m_low;
     bool m_tunerAvailable;
-    int  m_step;
     int  m_signalStrength;
     bool m_scanning;
     bool m_forward;
@@ -132,7 +130,6 @@ private:
     qint64 m_freqMin;
     qint64 m_freqMax;
     qint64 m_currentFreq;
-    QTime  m_playTime;
     QTimer* m_timer;
     QRadioTuner::SearchMode m_searchMode;
     qint64 m_searchStartFreq;
@@ -145,7 +142,6 @@ private:
     QString m_programTypeName;
     QString m_stationName;
     QString m_radioText;
-    bool m_alternativeFrequenciesEnabled;
 
     static void *EventListener(void* context);
 

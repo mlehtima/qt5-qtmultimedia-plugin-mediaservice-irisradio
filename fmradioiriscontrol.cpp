@@ -50,12 +50,10 @@ FMRadioIrisControl::FMRadioIrisControl()
     : QObject(),
       m_eventListenerThread(0),
       m_fd(-1),
-      m_tunerError(false),
       m_muted(false),
       m_stereo(false),
       m_low(false),
       m_tunerAvailable(false),
-      m_step(100000),
       m_signalStrength(0),
       m_scanning(false),
       m_forward(false),
@@ -69,11 +67,9 @@ FMRadioIrisControl::FMRadioIrisControl()
       m_searchPreviousFreq(0),
       m_rdsAvailable(false),
       m_rdsError(false),
-      m_programType(QRadioData::Undefined),
-      m_alternativeFrequenciesEnabled(true)
+      m_programType(QRadioData::Undefined)
 {
     initRadio();
-    m_playTime.restart();
     m_timer->setInterval(2000);
     connect(m_timer, SIGNAL(timeout()), this, SLOT(search()));
     qDebug("Create FM Radio iris Control");
@@ -113,8 +109,6 @@ bool FMRadioIrisControl::initRadio()
         SetFreq(m_currentFreq);
         return true;
     }
-    m_tunerError = true;
-    emit tunerError();
 
     return false;
 }
@@ -138,11 +132,9 @@ void FMRadioIrisControl::setBand(QRadioTuner::Band b)
 {
     if (m_freqMin <= 87500000 && m_freqMax >= 108000000 && b == QRadioTuner::FM) {
         // FM 87.5 to 108.0 MHz, except Japan 76-90 MHz
-        m_currentBand =  (QRadioTuner::Band)b;
-        m_step = 100000; // 100kHz steps
+        m_currentBand = (QRadioTuner::Band)b;
         emit bandChanged(m_currentBand);
     }
-    m_playTime.restart();
 }
 
 bool FMRadioIrisControl::isBandSupported(QRadioTuner::Band b) const
@@ -186,7 +178,6 @@ void FMRadioIrisControl::setFrequency(int frequency)
             }
             ioctl(m_fd, VIDIOC_S_FREQUENCY, &freq);
             m_currentFreq = f;
-            m_playTime.restart();
             emit frequencyChanged(m_currentFreq);
             m_radioText.clear();
             emit radioTextChanged(m_radioText);
@@ -200,7 +191,6 @@ void FMRadioIrisControl::setFrequency(int frequency)
             emit stationIdChanged(m_stationId);
         }
     }
-    m_playTime.restart();
 }
 
 bool FMRadioIrisControl::isStereo() const
