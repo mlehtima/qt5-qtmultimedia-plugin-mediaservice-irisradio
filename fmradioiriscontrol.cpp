@@ -96,7 +96,8 @@ bool FMRadioIrisControl::initRadio()
         m_tunerAvailable = true;
 
         if (pthread_create(&m_eventListenerThread, NULL, &FMRadioIrisControl::EventListener, this)) {
-            qFatal("Error creating thread");
+            qCritical("Error creating thread");
+            return false;
         }
         SetCtrl(V4L2_CID_PRIVATE_IRIS_STATE, 1);
         SetCtrl(V4L2_CID_PRIVATE_IRIS_EMPHASIS, 0);
