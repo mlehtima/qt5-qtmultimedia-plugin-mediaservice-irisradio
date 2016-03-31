@@ -49,15 +49,6 @@ public:
    QRadioData::Error error() const;
    QString errorString() const;
 
-signals:
-    void stationIdChanged(QString stationId);
-    void programTypeChanged(QRadioData::ProgramType programType);
-    void programTypeNameChanged(QString programTypeName);
-    void stationNameChanged(QString stationName);
-    void radioTextChanged(QString radioText);
-    void alternativeFrequenciesEnabledChanged(bool enabled);
-    void error(QRadioData::Error err);
-
 private:
     FMRadioIrisControl *control;
 };

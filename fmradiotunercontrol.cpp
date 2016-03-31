@@ -25,10 +25,6 @@ QT_BEGIN_NAMESPACE
 FMRadioTunerControl::FMRadioTunerControl(QObject *parent, FMRadioIrisControl *ctrl)
    : QRadioTunerControl(parent), control(ctrl)
 {
-    connect(control, SIGNAL(tunerAvailabilityChanged(bool)),
-               this, SIGNAL(availabilityChanged(bool)));
-    connect(control, SIGNAL(tunerAvailabilityChanged(QMultimedia::AvailabilityStatus)),
-               this, SIGNAL(availabilityChanged(QMultimedia::AvailabilityStatus)));
     connect(control, SIGNAL(stateChanged(QRadioTuner::State)),
                this, SIGNAL(stateChanged(QRadioTuner::State)));
     connect(control, SIGNAL(bandChanged(QRadioTuner::Band)),
@@ -55,16 +51,6 @@ FMRadioTunerControl::FMRadioTunerControl(QObject *parent, FMRadioIrisControl *ct
 
 FMRadioTunerControl::~FMRadioTunerControl()
 {
-}
-
-bool FMRadioTunerControl::isAvailable() const
-{
-    return control->isTunerAvailable();
-}
-
-QMultimedia::AvailabilityStatus FMRadioTunerControl::availability() const
-{
-    return control->tunerAvailability();
 }
 
 QRadioTuner::State FMRadioTunerControl::state() const
@@ -149,7 +135,7 @@ int FMRadioTunerControl::signalStrength() const
 
 int FMRadioTunerControl::volume() const
 {
-    return 0;
+    return control->volume();
 }
 
 void FMRadioTunerControl::setVolume(int)
@@ -173,7 +159,7 @@ bool FMRadioTunerControl::isSearching() const
 
 bool FMRadioTunerControl::isAntennaConnected() const
 {
-    return true;
+    return control->isAntennaConnected();
 }
 
 void FMRadioTunerControl::searchForward()

@@ -35,9 +35,6 @@ public:
     FMRadioTunerControl(QObject* parent = 0, FMRadioIrisControl *ctrl = 0);
     ~FMRadioTunerControl();
 
-    bool isAvailable() const;
-    QMultimedia::AvailabilityStatus availability() const;
-
     QRadioTuner::State state() const;
 
     QRadioTuner::Band band() const;
@@ -75,22 +72,6 @@ public:
 
     QRadioTuner::Error error() const;
     QString errorString() const;
-
-signals:
-    void stateChanged(QRadioTuner::State state);
-    void bandChanged(QRadioTuner::Band band);
-    void frequencyChanged(int frequency);
-    void stereoStatusChanged(bool stereo);
-    void searchingChanged(bool searching);
-    void signalStrengthChanged(int signalStrength);
-    void volumeChanged(int volume);
-    void mutedChanged(bool muted);
-    void error(QRadioTuner::Error err);
-    void stationFound(int frequency, QString stationId);
-    void antennaConnectedChanged(bool connectionStatus);
-    
-    void availabilityChanged(bool available);
-    void availabilityChanged(QMultimedia::AvailabilityStatus availability);
 
 private:
     FMRadioIrisControl *control;
