@@ -61,7 +61,6 @@ public:
     bool isMuted() const;
     void setMuted(bool m_muted);
 
-    void setSearching(bool search);
     bool isSearching() const;
 
     bool isAntennaConnected() const;

@@ -283,11 +283,6 @@ bool FMRadioIrisControl::isSearching() const
     return m_scanning;
 }
 
-void FMRadioIrisControl::setSearching(bool search)
-{
-    m_scanning = search;
-}
-
 void FMRadioIrisControl::doSeek(int dir)
 {
     struct v4l2_hw_freq_seek seek;
