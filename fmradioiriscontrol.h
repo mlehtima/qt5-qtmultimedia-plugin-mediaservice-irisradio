@@ -29,7 +29,6 @@
 #include <QTimer>
 #include <pthread.h>
 
-QT_BEGIN_NAMESPACE
 
 class FMRadioIrisControl : public QObject
 {
@@ -161,6 +160,5 @@ private:
     QString programTypeNameString(int rdsStandard, unsigned int type);
 };
 
-QT_END_NAMESPACE
 
 #endif // __FMRADIOIRISCONTROL_H

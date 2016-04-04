@@ -44,8 +44,6 @@ static void cconvert(QString *str) {
     }
 }
 
-QT_BEGIN_NAMESPACE
-
 FMRadioIrisControl::FMRadioIrisControl()
     : QObject(),
       m_eventListenerThread(0),
@@ -898,4 +896,3 @@ int FMRadioIrisControl::GetFreq(void)
     return m_currentFreq;
 }
 
-QT_END_NAMESPACE
