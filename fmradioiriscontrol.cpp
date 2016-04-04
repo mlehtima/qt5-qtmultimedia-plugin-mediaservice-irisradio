@@ -28,6 +28,7 @@
 
 #include <stdio.h>
 #include <errno.h>
+#include <unistd.h>
 
 #include <sys/ioctl.h>
 #include <linux/videodev2.h>
@@ -44,11 +45,9 @@ static void cconvert(QString *str) {
     }
 }
 
-QT_BEGIN_NAMESPACE
-
 FMRadioIrisControl::FMRadioIrisControl()
     : QObject(),
-      m_eventListenerThread(0),
+      m_workerThread(0),
       m_fd(-1),
       m_muted(false),
       m_stereo(false),
@@ -78,9 +77,13 @@ FMRadioIrisControl::FMRadioIrisControl()
 FMRadioIrisControl::~FMRadioIrisControl()
 {
     m_timer->stop();
-    SetCtrl(V4L2_CID_PRIVATE_IRIS_STATE, 0);
-    if (m_eventListenerThread > 0) {
-        pthread_join(m_eventListenerThread, NULL);
+    m_workerThread->setQuit();
+    SetCtrl(V4L2_CID_PRIVATE_IRIS_STATE, 0); // assuming this wakes blocking ioctl()
+    m_workerThread->wait();
+    delete m_workerThread;
+
+    if (m_fd != -1) {
+        close(m_fd);
     }
 }
 
@@ -91,10 +94,21 @@ bool FMRadioIrisControl::initRadio()
     if (m_fd != -1) {
         m_tunerAvailable = true;
 
-        if (pthread_create(&m_eventListenerThread, NULL, &FMRadioIrisControl::EventListener, this)) {
-            qCritical("Error creating thread");
-            return false;
-        }
+        m_workerThread = new IrisWorkerThread(m_fd);
+        connect(m_workerThread, SIGNAL(tunerAvailableChanged(bool)), this, SLOT(handleTunerAvailable(bool)));
+        connect(m_workerThread, SIGNAL(rdsAvailableChanged(bool)), this, SLOT(handleRdsAvailable(bool)));
+        connect(m_workerThread, SIGNAL(stereoStatusChanged(bool)), this, SLOT(handleStereoStatus(bool)));
+        connect(m_workerThread, SIGNAL(tuneSuccessful()), this, SLOT(handleTuneSuccesful()));
+        connect(m_workerThread, SIGNAL(seekComplete()), this, SLOT(handleSeekComplete()));
+        connect(m_workerThread, SIGNAL(frequencyChanged()), this, SLOT(handleFrequencyChanged()));
+        connect(m_workerThread, SIGNAL(stationsFound(const QList<int> &)),
+                this, SLOT(handleStationsFound(const QList<int> &)));
+        connect(m_workerThread, SIGNAL(radioTextChanged(const QString &)),
+                this, SLOT(handleRadioTextChanged(const QString &)));
+        connect(m_workerThread, SIGNAL(psChanged(QRadioData::ProgramType, const QString &, const QString &)),
+                this, SLOT(handlePsChanged(QRadioData::ProgramType, const QString &, const QString &)));
+        m_workerThread->start();
+
         SetCtrl(V4L2_CID_PRIVATE_IRIS_STATE, 1);
         SetCtrl(V4L2_CID_PRIVATE_IRIS_EMPHASIS, 0);
         SetCtrl(V4L2_CID_PRIVATE_IRIS_SPACING, 2);
@@ -319,6 +333,101 @@ void FMRadioIrisControl::search()
     doSeek(m_forward ? 1 : 0);
 }
 
+void FMRadioIrisControl::handleTunerAvailable(bool available)
+{
+    m_tunerAvailable = available;
+}
+
+void FMRadioIrisControl::handleRdsAvailable(bool available)
+{
+    m_rdsAvailable = available;
+    if (m_rdsAvailable && m_searchMode == QRadioTuner::SearchGetStationId) {
+        m_timer->start();
+    }
+}
+
+void FMRadioIrisControl::handleStereoStatus(bool stereo)
+{
+    if (stereo != m_stereo) {
+        m_stereo = stereo;
+        emit stereoStatusChanged(m_stereo);
+    }
+}
+
+void FMRadioIrisControl::handleTuneSuccesful()
+{
+    GetFreq();
+    emit frequencyChanged(m_currentFreq);
+    int signal = signalStrength();
+    if (m_signalStrength != signal) {
+        m_signalStrength = signal;
+        emit signalStrengthChanged(m_signalStrength);
+    }
+    if (m_searchMode == QRadioTuner::SearchGetStationId) {
+        if (m_searchPreviousFreq <= m_currentFreq) {
+            m_searchPreviousFreq = m_currentFreq;
+            m_timer->start();
+        } else {
+            cancelSearch();
+            setFrequency(m_searchStartFreq);
+        }
+    }
+}
+
+void FMRadioIrisControl::handleSeekComplete()
+{
+    m_scanning = false;
+    emit searchingChanged(m_scanning);
+}
+
+void FMRadioIrisControl::handleFrequencyChanged()
+{
+    GetFreq();
+    emit frequencyChanged(m_currentFreq);
+}
+
+void FMRadioIrisControl::handleStationsFound(const QList<int> &frequencies)
+{
+    foreach (int frequency, frequencies) {
+        emit stationFound(frequency + m_freqMin, QString());
+    }
+
+    cancelSearch();
+    setFrequency(m_searchStartFreq);
+}
+
+void FMRadioIrisControl::handleRadioTextChanged(const QString &text)
+{
+    if (m_radioText != text) {
+        m_radioText = text;
+        emit radioTextChanged(m_radioText);
+    }
+}
+
+void FMRadioIrisControl::handlePsChanged(QRadioData::ProgramType type, const QString &stationId, const QString &stationName)
+{
+    if (type != m_programType) {
+        m_programType = type;
+        m_programTypeName = programTypeNameString(0, m_programType);
+        emit programTypeChanged(m_programType);
+        emit programTypeNameChanged(m_programTypeName);
+    }
+
+    if (stationId != m_stationId) {
+        m_stationId = stationId;
+        emit stationIdChanged(m_stationId);
+    }
+
+    if (stationName != m_stationName) {
+        m_stationName = stationName;
+        emit stationNameChanged(m_stationName);
+    }
+
+    if (m_searchMode == QRadioTuner::SearchGetStationId) {
+        emit stationFound(m_currentFreq, m_stationId);
+        search();
+    }
+}
 
 bool FMRadioIrisControl::isAntennaConnected() const
 {
@@ -460,19 +569,6 @@ QString FMRadioIrisControl::rdsErrorString() const
     return QString();
 }
 
-void FMRadioIrisControl::GetCaps(void)
-{
-    struct v4l2_capability caps;
-    if (ioctl(m_fd, VIDIOC_QUERYCAP, &caps) < 0) {
-        qCritical("Failed to query capabilities (id: %i)", errno);
-    }
-}
-
-int FMRadioIrisControl::GetEvent()
-{
-    return GetBuffer(IRIS_BUF_EVENTS);
-}
-
 unsigned int FMRadioIrisControl::programTypeValue(int rdsStandard, unsigned int type)
 {
     unsigned int rbdsTypes[] = {
@@ -594,193 +690,6 @@ QString FMRadioIrisControl::programTypeNameString(int rdsStandard, unsigned int 
         return tr(rbdsTypes[type]);
 }
 
-int FMRadioIrisControl::GetBuffer(int type)
-{
-    int ret = -1;
-    struct v4l2_buffer buf;
-    memset(&buf, 0, sizeof(buf));
-    void *mbuf = malloc(128);
-    buf.index = type;
-    buf.type = V4L2_BUF_TYPE_PRIVATE;
-    buf.memory = V4L2_MEMORY_USERPTR;
-    buf.m.userptr = (long unsigned int)mbuf;
-    buf.length = 128;
-    if (0 == ioctl(m_fd, VIDIOC_DQBUF, &buf)) {
-        if (type == IRIS_BUF_EVENTS) {
-            unsigned int cnt;
-            int signal;
-            for (cnt = 0; cnt < buf.bytesused; cnt++) {
-                ret = 1;
-                switch (((unsigned char *)mbuf)[cnt]) {
-                    case IRIS_EVT_RADIO_READY:
-                        qDebug("Radio ready");
-                        m_tunerAvailable = true;
-                        break;
-                    case IRIS_EVT_TUNE_SUCC:
-                        GetFreq();
-                        emit frequencyChanged(m_currentFreq);
-                        signal = signalStrength();
-                        if (m_signalStrength != signal) {
-                            m_signalStrength = signal;
-                            emit signalStrengthChanged(m_signalStrength);
-                        }
-                        if (m_searchMode == QRadioTuner::SearchGetStationId) {
-                            if (m_searchPreviousFreq <= m_currentFreq) {
-                                m_searchPreviousFreq = m_currentFreq;
-                                m_timer->start();
-                            }
-                            else {
-                                cancelSearch();
-                                setFrequency(m_searchStartFreq);
-                            }
-                        }
-                        break;
-                    case IRIS_EVT_SEEK_COMPLETE:
-                        m_scanning = false;
-                        emit searchingChanged(m_scanning);
-                        break;
-                    case IRIS_EVT_SCAN_NEXT:
-                        GetFreq();
-                        emit frequencyChanged(m_currentFreq);
-                        break;
-                    case IRIS_EVT_NEW_RAW_RDS:
-                        //GetBuffer(IRIS_BUF_RAW_RDS);
-                        break;
-                    case IRIS_EVT_NEW_RT_RDS:
-                        GetBuffer(IRIS_BUF_RT_RDS);
-                        break;
-                    case IRIS_EVT_NEW_PS_RDS:
-                        GetBuffer(IRIS_BUF_PS_RDS);
-                        break;
-                    case IRIS_EVT_ERROR:
-                        qDebug("Radio error");
-                        break;
-                    case IRIS_EVT_BELOW_TH:
-                        break;
-                    case IRIS_EVT_ABOVE_TH:
-                        break;
-                    case IRIS_EVT_STEREO:
-                        m_stereo = true;
-                        emit stereoStatusChanged(m_stereo);
-                        break;
-                    case IRIS_EVT_MONO:
-                        m_stereo = false;
-                        emit stereoStatusChanged(m_stereo);
-                        break;
-                    case IRIS_EVT_RDS_AVAIL:
-                        m_rdsAvailable = true;
-                        if (m_searchMode == QRadioTuner::SearchGetStationId) {
-                            m_timer->start();
-                        }
-                        break;
-                    case IRIS_EVT_RDS_NOT_AVAIL:
-                        m_rdsAvailable = false;
-                        break;
-                    case IRIS_EVT_NEW_SRCH_LIST:
-                        GetBuffer(IRIS_BUF_SRCH_LIST);
-                        break;
-                    case IRIS_EVT_NEW_AF_LIST:
-                        break;
-                    case IRIS_EVT_TXRDSDAT:
-                        break;
-                    case IRIS_EVT_TXRDSDONE:
-                        qDebug("IRIS_EVT_TXRDSDONE");
-                        break;
-                    case IRIS_EVT_RADIO_DISABLED:
-                        qDebug("Radio disabled");
-                        m_tunerAvailable = false;
-                        break;
-                    case IRIS_EVT_NEW_ODA:
-                        break;
-                    case IRIS_EVT_NEW_RT_PLUS:
-                        break;
-                    case IRIS_EVT_NEW_ERT:
-                        break;
-                    default:
-                        ret = -1;
-                        qCritical("Unknown event");
-                }
-            }
-        }
-        else {
-            switch (type) {
-                case IRIS_BUF_SRCH_LIST:
-                    {
-                    qDebug("Search list ready");
-                    int cnt;
-                    int stn_num;
-                    unsigned int abs_freq;
-                    int len;
-                    unsigned char *data = (unsigned char *)mbuf;
-                    int num_stations_found = data[0];
-                    len = num_stations_found * 2 + 1;
-
-                    for (cnt = 1, stn_num = 0;
-                         (cnt < len) && (stn_num < num_stations_found)
-                         && (stn_num < num_stations_found);
-                         cnt += 2, stn_num++) {
-                        abs_freq = (data[cnt+1] | (data[cnt] << 8))*50000+m_freqMin;
-                        emit stationFound(abs_freq, "");
-                    }
-                    cancelSearch();
-                    setFrequency(m_searchStartFreq);
-                    }
-                    break;
-                case IRIS_BUF_RT_RDS:
-                    m_radioText = QString::fromLatin1((char *)&((unsigned char *)mbuf)[5], (int)((unsigned char *)mbuf)[0]);
-                    m_radioText = m_radioText.trimmed();
-                    cconvert(&m_radioText);
-                    emit radioTextChanged(m_radioText);
-                    break;
-                case IRIS_BUF_PS_RDS:
-                    m_programType = (QRadioData::ProgramType)(int)((unsigned char *)mbuf)[1];
-                    emit programTypeChanged(m_programType);
-                    m_programTypeName = programTypeNameString(0, m_programType);
-                    emit programTypeNameChanged(m_programTypeName);
-                    m_stationId = QString("%1%2")
-                                  .arg((unsigned int)(((unsigned char *)mbuf)[2]), 2, 16, QChar('0'))
-                                  .arg((unsigned int)(((unsigned char *)mbuf)[3]), 2, 16, QChar('0'));
-                    emit stationIdChanged(m_stationId);
-                    m_stationName = QString::fromLatin1((char *)&((unsigned char *)mbuf)[5], 8);
-                    cconvert(&m_stationName);
-                    emit stationNameChanged(m_stationName);
-                    if (m_searchMode == QRadioTuner::SearchGetStationId) {
-                        emit stationFound(m_currentFreq, m_stationId);
-                        search();
-                    }
-                    break;
-                case IRIS_BUF_RAW_RDS:
-                    break;
-                case IRIS_BUF_AF_LIST:
-                    break;
-                case IRIS_BUF_PEEK:
-                    break;
-                case IRIS_BUF_SSBI_PEEK:
-                    break;
-                case IRIS_BUF_RDS_CNTRS:
-                    break;
-                case IRIS_BUF_RD_DEFAULT:
-                    break;
-                case IRIS_BUF_CAL_DATA:
-                    break;
-                case IRIS_BUF_RT_PLUS:
-                    break;
-                case IRIS_BUF_ERT:
-                    break;
-                default:
-                    ret = -1;
-                    qCritical("Unknown event");
-            }
-        }
-    } else {
-        qCritical("Failed to get buffer (error: %i)", errno);
-    }
-
-    free(mbuf);
-
-    return ret;
-}
-
 bool FMRadioIrisControl::SetTuner()
 {
     struct v4l2_tuner tuner;
@@ -850,16 +759,6 @@ int FMRadioIrisControl::GetCtrl(int id)
     }
 }
 
-void *FMRadioIrisControl::EventListener(void* context)
-{
-    qDebug("Starting FM event listener");
-    while (((FMRadioIrisControl *)context)->isTunerAvailable()) {
-        ((FMRadioIrisControl *)context)->GetEvent();
-    }
-    qDebug("Stopping FM event listener");
-    return NULL;
-}
-
 bool FMRadioIrisControl::SetFreq(int f)
 {
     struct v4l2_frequency freq;
@@ -881,7 +780,7 @@ bool FMRadioIrisControl::SetFreq(int f)
     }
 }
 
-int FMRadioIrisControl::GetFreq(void)
+int FMRadioIrisControl::GetFreq()
 {
     struct v4l2_frequency freq;
     memset(&freq, 0, sizeof(freq));
@@ -898,4 +797,177 @@ int FMRadioIrisControl::GetFreq(void)
     return m_currentFreq;
 }
 
-QT_END_NAMESPACE
+
+IrisWorkerThread::IrisWorkerThread(int fd)
+    : QThread(),
+      m_fd(fd)
+{
+}
+
+IrisWorkerThread::~IrisWorkerThread()
+{
+}
+
+void IrisWorkerThread::setQuit()
+{
+    m_quit.store(1);
+}
+
+void IrisWorkerThread::run()
+{
+    while (m_quit.loadAcquire() == 0) {
+        getEvents(IRIS_BUF_EVENTS);
+    }
+}
+
+void IrisWorkerThread::getEvents(int type)
+{
+    struct v4l2_buffer buf;
+    memset(&buf, 0, sizeof(buf));
+    void *mbuf = malloc(128);
+    buf.index = type;
+    buf.type = V4L2_BUF_TYPE_PRIVATE;
+    buf.memory = V4L2_MEMORY_USERPTR;
+    buf.m.userptr = (long unsigned int)mbuf;
+    buf.length = 128;
+
+    if (0 == ioctl(m_fd, VIDIOC_DQBUF, &buf)) {
+        if (type == IRIS_BUF_EVENTS) {
+            for (unsigned int cnt = 0; cnt < buf.bytesused; cnt++) {
+                switch (((unsigned char *)mbuf)[cnt]) {
+                case IRIS_EVT_RADIO_READY:
+                    qDebug("Radio ready");
+                    emit tunerAvailableChanged(true);
+                    break;
+                case IRIS_EVT_TUNE_SUCC:
+                    emit tuneSuccessful();
+                    break;
+                case IRIS_EVT_SEEK_COMPLETE:
+                    emit seekComplete();
+                    break;
+                case IRIS_EVT_SCAN_NEXT:
+                    emit frequencyChanged();
+                    break;
+                case IRIS_EVT_NEW_RAW_RDS:
+                    //getEvents(IRIS_BUF_RAW_RDS);
+                    break;
+                case IRIS_EVT_NEW_RT_RDS:
+                    getEvents(IRIS_BUF_RT_RDS);
+                    break;
+                case IRIS_EVT_NEW_PS_RDS:
+                    getEvents(IRIS_BUF_PS_RDS);
+                    break;
+                case IRIS_EVT_ERROR:
+                    qDebug("Radio error");
+                    break;
+                case IRIS_EVT_BELOW_TH:
+                    break;
+                case IRIS_EVT_ABOVE_TH:
+                    break;
+                case IRIS_EVT_STEREO:
+                    emit stereoStatusChanged(true);
+                    break;
+                case IRIS_EVT_MONO:
+                    emit stereoStatusChanged(false);
+                    break;
+                case IRIS_EVT_RDS_AVAIL:
+                    emit rdsAvailableChanged(true);
+                    break;
+                case IRIS_EVT_RDS_NOT_AVAIL:
+                    emit rdsAvailableChanged(false);
+                    break;
+                case IRIS_EVT_NEW_SRCH_LIST:
+                    getEvents(IRIS_BUF_SRCH_LIST);
+                    break;
+                case IRIS_EVT_NEW_AF_LIST:
+                    break;
+                case IRIS_EVT_TXRDSDAT:
+                    break;
+                case IRIS_EVT_TXRDSDONE:
+                    qDebug("IRIS_EVT_TXRDSDONE");
+                    break;
+                case IRIS_EVT_RADIO_DISABLED:
+                    qDebug("Radio disabled");
+                    emit tunerAvailableChanged(false);
+                    break;
+                case IRIS_EVT_NEW_ODA:
+                    break;
+                case IRIS_EVT_NEW_RT_PLUS:
+                    break;
+                case IRIS_EVT_NEW_ERT:
+                    break;
+                default:
+                    qCritical("Unknown event");
+                }
+            }
+        } else {
+            switch (type) {
+            case IRIS_BUF_SRCH_LIST:
+            {
+                qDebug("Search list ready");
+                int cnt;
+                int stn_num;
+                int len;
+                unsigned char *data = (unsigned char *)mbuf;
+                int num_stations_found = data[0];
+                len = num_stations_found * 2 + 1;
+                QList<int> frequencies;
+
+                for (cnt = 1, stn_num = 0;
+                     (cnt < len) && (stn_num < num_stations_found)
+                     && (stn_num < num_stations_found);
+                     cnt += 2, stn_num++) {
+                    frequencies << (data[cnt+1] | (data[cnt] << 8)) * 50000;
+                }
+                emit stationsFound(frequencies);
+            }
+                break;
+            case IRIS_BUF_RT_RDS:
+            {
+                QString radioText;
+                radioText = QString::fromLatin1((char *)&((unsigned char *)mbuf)[5], (int)((unsigned char *)mbuf)[0]);
+                radioText = radioText.trimmed();
+                cconvert(&radioText);
+                emit radioTextChanged(radioText);
+            }
+                break;
+            case IRIS_BUF_PS_RDS:
+            {
+                QRadioData::ProgramType programType = (QRadioData::ProgramType)(int)((unsigned char *)mbuf)[1];
+                QString stationId = QString("%1%2")
+                        .arg((unsigned int)(((unsigned char *)mbuf)[2]), 2, 16, QChar('0'))
+                        .arg((unsigned int)(((unsigned char *)mbuf)[3]), 2, 16, QChar('0'));
+                QString stationName = QString::fromLatin1((char *)&((unsigned char *)mbuf)[5], 8);
+                cconvert(&stationName);
+                emit psChanged(programType, stationId, stationName);
+            }
+                break;
+            case IRIS_BUF_RAW_RDS:
+                break;
+            case IRIS_BUF_AF_LIST:
+                break;
+            case IRIS_BUF_PEEK:
+                break;
+            case IRIS_BUF_SSBI_PEEK:
+                break;
+            case IRIS_BUF_RDS_CNTRS:
+                break;
+            case IRIS_BUF_RD_DEFAULT:
+                break;
+            case IRIS_BUF_CAL_DATA:
+                break;
+            case IRIS_BUF_RT_PLUS:
+                break;
+            case IRIS_BUF_ERT:
+                break;
+            default:
+                qCritical("Unknown event");
+            }
+        }
+    } else {
+        qCritical("Failed to get buffer (error: %i)", errno);
+    }
+
+    free(mbuf);
+}
+

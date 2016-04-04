@@ -21,15 +21,44 @@
 #ifndef __FMRADIOIRISCONTROL_H
 #define __FMRADIOIRISCONTROL_H
 
-#include <QDateTime>
-#include <QRadioTunerControl>
 #include <QRadioTuner>
-#include <QRadioDataControl>
 #include <QRadioData>
 #include <QTimer>
-#include <pthread.h>
+#include <QThread>
+#include <QAtomicInt>
+#include <QObject>
+#include <QList>
 
-QT_BEGIN_NAMESPACE
+class IrisWorkerThread: public QThread
+{
+    Q_OBJECT
+
+public:
+    IrisWorkerThread(int fd);
+    ~IrisWorkerThread();
+
+    void setQuit();
+
+protected:
+    void run();
+
+signals:
+    void tunerAvailableChanged(bool available);
+    void rdsAvailableChanged(bool available);
+    bool stereoStatusChanged(bool stereo);
+    void tuneSuccessful();
+    void seekComplete();
+    void frequencyChanged();
+    void stationsFound(const QList<int> &frequencies); // relative to current minimum frequency
+    void radioTextChanged(const QString &text);
+    void psChanged(QRadioData::ProgramType type, const QString &stationId, const QString &stationName);
+
+private:
+    void getEvents(int type);
+
+    int m_fd;
+    QAtomicInt m_quit;
+};
 
 class FMRadioIrisControl : public QObject
 {
@@ -113,9 +142,18 @@ signals:
 
 private slots:
     void search();
+    void handleTunerAvailable(bool available);
+    void handleRdsAvailable(bool available);
+    void handleStereoStatus(bool stereo);
+    void handleTuneSuccesful();
+    void handleSeekComplete();
+    void handleFrequencyChanged();
+    void handleStationsFound(const QList<int> &frequencies);
+    void handleRadioTextChanged(const QString &text);
+    void handlePsChanged(QRadioData::ProgramType type, const QString &stationId, const QString &stationName);
 
 private:
-    pthread_t m_eventListenerThread;
+    IrisWorkerThread *m_workerThread;
 
     int m_fd;
 
@@ -143,16 +181,10 @@ private:
     QString m_stationName;
     QString m_radioText;
 
-    static void *EventListener(void* context);
-
     bool initRadio();
     void doSeek(int dir);
     bool SetFreq(int frequency);//Hz
-    int GetFreq(void);//Hz
-    void GetCaps(void);
-    int GetBuffer(int type);
-    int GetEvent();
-    void DoSeek(int dir);//0 is down, 1 is up
+    int GetFreq();//Hz
     bool SetTuner();
     bool GetTuner();
     bool SetCtrl(int id, int value);
@@ -161,6 +193,5 @@ private:
     QString programTypeNameString(int rdsStandard, unsigned int type);
 };
 
-QT_END_NAMESPACE
 
 #endif // __FMRADIOIRISCONTROL_H
