@@ -184,9 +184,7 @@ private:
     bool initRadio();
     void doSeek(int dir);
     bool SetFreq(int frequency);//Hz
-    int GetFreq(void);//Hz
-    void GetCaps(void);
-    void DoSeek(int dir);//0 is down, 1 is up
+    int GetFreq();//Hz
     bool SetTuner();
     bool GetTuner();
     bool SetCtrl(int id, int value);

@@ -569,14 +569,6 @@ QString FMRadioIrisControl::rdsErrorString() const
     return QString();
 }
 
-void FMRadioIrisControl::GetCaps(void)
-{
-    struct v4l2_capability caps;
-    if (ioctl(m_fd, VIDIOC_QUERYCAP, &caps) < 0) {
-        qCritical("Failed to query capabilities (id: %i)", errno);
-    }
-}
-
 unsigned int FMRadioIrisControl::programTypeValue(int rdsStandard, unsigned int type)
 {
     unsigned int rbdsTypes[] = {
@@ -788,7 +780,7 @@ bool FMRadioIrisControl::SetFreq(int f)
     }
 }
 
-int FMRadioIrisControl::GetFreq(void)
+int FMRadioIrisControl::GetFreq()
 {
     struct v4l2_frequency freq;
     memset(&freq, 0, sizeof(freq));
