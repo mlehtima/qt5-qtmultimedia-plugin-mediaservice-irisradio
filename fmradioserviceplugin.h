@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2016 Matti Lehtimäki
+  Copyright (C) 2016-2017 Matti Lehtimäki
   Contact: Matti Lehtimäki <matti.lehtimaki@gmail.com>
   All rights reserved.
 

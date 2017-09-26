@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2016 Matti Lehtimäki
+  Copyright (C) 2016-2017 Matti Lehtimäki
   Contact: Matti Lehtimäki <matti.lehtimaki@gmail.com>
   All rights reserved.
 
@@ -21,7 +21,7 @@
 #ifndef __FMRADIOTUNERCONTROL_H
 #define __FMRADIOTUNERCONTROL_H
 
-#include "fmradioiriscontrol.h"
+#include "fmradiofmdrvcontrol.h"
 
 #include <QRadioTunerControl>
 #include <QRadioTuner>
@@ -32,7 +32,7 @@ class FMRadioTunerControl : public QRadioTunerControl
 {
     Q_OBJECT
 public:
-    FMRadioTunerControl(QObject* parent = 0, FMRadioIrisControl *ctrl = 0);
+    FMRadioTunerControl(QObject* parent = 0, FMRadioFMDrvControl *ctrl = 0);
     ~FMRadioTunerControl();
 
     QRadioTuner::State state() const;
@@ -74,7 +74,7 @@ public:
     QString errorString() const;
 
 private:
-    FMRadioIrisControl *control;
+    FMRadioFMDrvControl *control;
 };
 
 QT_END_NAMESPACE

@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2016 Matti Lehtimäki
+  Copyright (C) 2016-2017 Matti Lehtimäki
   Contact: Matti Lehtimäki <matti.lehtimaki@gmail.com>
   All rights reserved.
 
@@ -21,7 +21,7 @@
 #include "fmradioservice.h"
 #include "fmradiotunercontrol.h"
 #include "fmradiodatacontrol.h"
-#include "fmradioiriscontrol.h"
+#include "fmradiofmdrvcontrol.h"
 
 #include <QDebug>
 
@@ -32,16 +32,16 @@ FMRadioService::FMRadioService(QObject *parent):
 {
     qDebug("Instantiating QMediaService...");
 
-    m_irisControl = new FMRadioIrisControl;
-    m_tunerControl = new FMRadioTunerControl(this, m_irisControl);
-    m_dataControl = new FMRadioDataControl(this, m_irisControl);
+    m_fmdrvControl = new FMRadioFMDrvControl;
+    m_tunerControl = new FMRadioTunerControl(this, m_fmdrvControl);
+    m_dataControl = new FMRadioDataControl(this, m_fmdrvControl);
 }
 
 FMRadioService::~FMRadioService()
 {
     delete m_dataControl;
     delete m_tunerControl;
-    delete m_irisControl;
+    delete m_fmdrvControl;
 }
 
 QMediaControl *FMRadioService::requestControl(const char *name)

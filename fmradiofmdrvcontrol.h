@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2016 Matti Lehtimäki
+  Copyright (C) 2016-2017 Matti Lehtimäki
   Contact: Matti Lehtimäki <matti.lehtimaki@gmail.com>
   All rights reserved.
 
@@ -18,8 +18,8 @@
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
-#ifndef __FMRADIOIRISCONTROL_H
-#define __FMRADIOIRISCONTROL_H
+#ifndef __FMRADIOFMDRVCONTROL_H
+#define __FMRADIOFMDRVCONTROL_H
 
 #include <QRadioTuner>
 #include <QRadioData>
@@ -29,13 +29,13 @@
 #include <QObject>
 #include <QList>
 
-class IrisWorkerThread: public QThread
+class FMDrvWorkerThread: public QThread
 {
     Q_OBJECT
 
 public:
-    IrisWorkerThread(int fd);
-    ~IrisWorkerThread();
+    FMDrvWorkerThread(int fd);
+    ~FMDrvWorkerThread();
 
     void setQuit();
 
@@ -60,12 +60,12 @@ private:
     QAtomicInt m_quit;
 };
 
-class FMRadioIrisControl : public QObject
+class FMRadioFMDrvControl : public QObject
 {
     Q_OBJECT
 public:
-    FMRadioIrisControl();
-    ~FMRadioIrisControl();
+    FMRadioFMDrvControl();
+    ~FMRadioFMDrvControl();
 
     bool isTunerAvailable() const;
 
@@ -142,6 +142,7 @@ signals:
 
 private slots:
     void search();
+/*
     void handleTunerAvailable(bool available);
     void handleRdsAvailable(bool available);
     void handleStereoStatus(bool stereo);
@@ -151,11 +152,13 @@ private slots:
     void handleStationsFound(const QList<int> &frequencies);
     void handleRadioTextChanged(const QString &text);
     void handlePsChanged(QRadioData::ProgramType type, const QString &stationId, const QString &stationName);
+*/
 
 private:
-    IrisWorkerThread *m_workerThread;
+    FMDrvWorkerThread *m_workerThread;
 
     int m_fd;
+    int m_hci_fd;
 
     bool m_muted;
     bool m_stereo;
@@ -183,7 +186,6 @@ private:
 
     bool initRadio();
     void doSeek(int dir);
-    bool SetFreq(int frequency);//Hz
     int GetFreq();//Hz
     bool SetTuner();
     bool GetTuner();
@@ -194,4 +196,4 @@ private:
 };
 
 
-#endif // __FMRADIOIRISCONTROL_H
+#endif // __FMRADIOFMDRVCONTROL_H

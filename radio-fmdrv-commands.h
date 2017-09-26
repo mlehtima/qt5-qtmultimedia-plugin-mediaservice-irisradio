@@ -18,35 +18,7 @@
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
-#ifndef FMRADIOSERVICE_H
-#define FMRADIOSERVICE_H
+#ifndef __RADIO_FMDRV_COMMANDS_H
+#define __RADIO_FMDRV_COMMANDS_H
 
-#include <QMediaService>
-
-QT_BEGIN_NAMESPACE
-class QRadioTunerControl;
-class QRadioDataControl;
-
-class FMRadioTunerControl;
-class FMRadioDataControl;
-class FMRadioFMDrvControl;
-
-class FMRadioService : public QMediaService
-{
-    Q_OBJECT
-public:
-    FMRadioService(QObject *parent = 0);
-    ~FMRadioService();
-
-    QMediaControl *requestControl(const char *name);
-    void releaseControl(QMediaControl *control);
-
-private:
-    FMRadioTunerControl *m_tunerControl;
-    FMRadioDataControl *m_dataControl;
-    FMRadioFMDrvControl *m_fmdrvControl;
-};
-
-QT_END_NAMESPACE
-
-#endif
+#endif /* __RADIO_FMDRV_COMMANDS_H */

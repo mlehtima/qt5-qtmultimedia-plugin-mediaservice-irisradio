@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2016 Matti Lehtimäki
+  Copyright (C) 2016-2017 Matti Lehtimäki
   Contact: Matti Lehtimäki <matti.lehtimaki@gmail.com>
   All rights reserved.
 
@@ -22,7 +22,7 @@
 
 QT_BEGIN_NAMESPACE
 
-FMRadioDataControl::FMRadioDataControl(QObject *parent, FMRadioIrisControl *ctrl)
+FMRadioDataControl::FMRadioDataControl(QObject *parent, FMRadioFMDrvControl *ctrl)
    : QRadioDataControl(parent), control(ctrl)
 {
     connect(control, SIGNAL(stationIdChanged(QString)),

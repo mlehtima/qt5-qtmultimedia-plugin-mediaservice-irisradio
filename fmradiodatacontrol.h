@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2016 Matti Lehtimäki
+  Copyright (C) 2016-2017 Matti Lehtimäki
   Contact: Matti Lehtimäki <matti.lehtimaki@gmail.com>
   All rights reserved.
 
@@ -21,7 +21,7 @@
 #ifndef __FMRADIODATACONTROL_H
 #define __FMRADIODATACONTROL_H
 
-#include "fmradioiriscontrol.h"
+#include "fmradiofmdrvcontrol.h"
 
 #include <QRadioDataControl>
 #include <QRadioData>
@@ -32,7 +32,7 @@ class FMRadioDataControl : public QRadioDataControl
 {
    Q_OBJECT
 public:
-   FMRadioDataControl(QObject* parent = 0, FMRadioIrisControl *ctrl = 0);
+   FMRadioDataControl(QObject* parent = 0, FMRadioFMDrvControl *ctrl = 0);
    ~FMRadioDataControl();
 
    bool isAvailable() const;
@@ -50,7 +50,7 @@ public:
    QString errorString() const;
 
 private:
-    FMRadioIrisControl *control;
+    FMRadioFMDrvControl *control;
 };
 
 QT_END_NAMESPACE

@@ -1,7 +1,7 @@
 
 load(configure)
 
-TARGET = qtmedia_irisradio
+TARGET = qtmedia_fmdrv
 QT += multimedia-private
 
 PLUGIN_TYPE = mediaservice
@@ -12,11 +12,11 @@ SOURCES += fmradioserviceplugin.cpp \
     fmradiodatacontrol.cpp \
     fmradioservice.cpp \
     fmradiotunercontrol.cpp \
-    fmradioiriscontrol.cpp
+    fmradiofmdrvcontrol.cpp
 
 HEADERS += fmradioserviceplugin.h \
     fmradiodatacontrol.h \
     fmradioservice.h \
     fmradiotunercontrol.h \
-    fmradioiriscontrol.h \
-    radio-iris-commands.h
+    fmradiofmdrvcontrol.h \
+    radio-fmdrv-commands.h

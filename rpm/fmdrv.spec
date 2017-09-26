@@ -1,15 +1,15 @@
-Name:       qt5-qtmultimedia-plugin-mediaservice-irisradio
+Name:       qt5-qtmultimedia-plugin-mediaservice-fmdrv
 
 %{!?qtc_qmake:%define qtc_qmake %qmake}
 %{!?qtc_qmake5:%define qtc_qmake5 %qmake5}
 %{!?qtc_make:%define qtc_make make}
 %{?qtc_builddir:%define _builddir %qtc_builddir}
-Summary:    Qt Multimedia - Iris FM Radio media service
+Summary:    Qt Multimedia - Broadcom V4L2 FM driver FM Radio media service
 Version:    0.1
 Release:    1%{?dist}
 Group:      System/Libraries
 License:    LGPLv2.1
-URL:        https://github.com/mer-hybris/qt5-qtmultimedia-plugin-mediaservice-irisradio
+URL:        https://github.com/mer-hybris/qt5-qtmultimedia-plugin-mediaservice-fmdrv
 Source0:    %{name}-%{version}.tar.bz2
 BuildRequires:  qt5-qtcore-devel
 BuildRequires:  qt5-qmake
@@ -17,7 +17,7 @@ BuildRequires:  pkgconfig(Qt5Core)
 BuildRequires:  pkgconfig(Qt5Multimedia)
 
 %description
-Qt5 Iris FM Radio media service plugin
+Qt5 Broadcom V4L2 FM Radio media service plugin
 
 
 %prep
@@ -37,4 +37,4 @@ rm -f %{buildroot}/usr/lib/cmake/Qt5Multimedia/Qt5Multimedia_FMRadioServicePlugi
 
 %files
 %defattr(-,root,root,-)
-%{_libdir}/qt5/plugins/mediaservice/libqtmedia_irisradio.so
+%{_libdir}/qt5/plugins/mediaservice/libqtmedia_fmdrv.so
